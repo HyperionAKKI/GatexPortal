@@ -1,0 +1,66 @@
+// prisma/schema.prisma
+// GateX Registration Portal — Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── CLIENT ──────────────────────────────────────────────────────────────────
+model Client {
+  id            String         @id @default(cuid())
+  name          String
+  gateId        String         @unique  // e.g. GX-SCH-001
+  sector        String         // school | college | office | showroom | clinic | factory
+  logoKey       String?        // S3 key for client logo
+  logoColor     String?        // fallback color for logo placeholder
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  registrations Registration[]
+
+  @@index([sector])
+  @@index([gateId])
+}
+
+// ── REGISTRATION ─────────────────────────────────────────────────────────────
+model Registration {
+  id                   String    @id @default(cuid())
+  submissionId         String    @unique  // GATEX-REG-XXXXXX
+  clientId             String
+  client               Client    @relation(fields: [clientId], references: [id])
+  sector               String
+  category             String   // Student | Teacher | Employee | Object | Others | …
+  fields               Json     // flexible: {name, class, roll, mobile, …}
+  mode                 String   @default("manual")  // manual | existing | excel_import
+  status               String   @default("pending") // pending | approved | rejected
+  hasDuplicateWarning  Boolean  @default(false)
+  duplicateRef         String?  // submissionId of potential duplicate
+  reviewedAt           DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  images               Image[]
+
+  @@index([clientId])
+  @@index([category])
+  @@index([status])
+  @@index([submissionId])
+}
+
+// ── IMAGE ────────────────────────────────────────────────────────────────────
+model Image {
+  id              String       @id @default(cuid())
+  registrationId  String
+  registration    Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  s3Key           String       // S3 key — only approved images are ever stored
+  angleIndex      Int?         // 0=Front 1=Left 2=Right 3=Up 4=Down | null=object
+  angleName       String       // "Front" | "Slight Left" | "object"
+  approved        Boolean      @default(true)  // always true — rejected images never stored
+  fileSize        Int
+  createdAt       DateTime     @default(now())
+
+  @@index([registrationId])
+}
