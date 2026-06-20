@@ -91,7 +91,8 @@ async function main() {
   // 2. Load students CSV
   console.log('\n[2/3] Loading students CSV...');
   const possiblePaths = [
-    path.join(__dirname, '..', 'data', 'students_rows.csv'),  // preferred: copy here on server
+    '/var/www/gatex-portal/data/students_rows.csv',           // AWS server path
+    path.join(__dirname, '..', 'data', 'students_rows.csv'),  // local fallback
     '/tmp/students_rows.csv',
   ];
 
